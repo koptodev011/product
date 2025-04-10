@@ -88,18 +88,35 @@ class AuthController extends Controller
             $otp->otp = $otpCode;
             $otp->save();
         }
-    
+        $createToken = $user->createToken('auth_token')->plainTextToken;
         return response()->json([
             'message' => 'User logged in successfully',
-            'otp' => $otpCode
+            'otp' => $otpCode,
+            'token' => $createToken
         ], 200);
     }
     
 
 
 public function otpVerification(Request $request){
-    dd("Working");
+    $user = auth()->user();
+    $otp = Otp::where('otp',$request->otp)
+     ->where('user_id', $user->id)->first();
+    if(!$otp){
+        return response()->json([
+            'message' => 'Invalid OTP'
+        ], 400);
+    }else{
+        return response()->json([
+            'message' => 'OTP verified successfully'
+        ], 200);
+    }
 }
+
+
+
+
+
 
 
     public function signup(Request $request)
@@ -177,6 +194,10 @@ public function otpVerification(Request $request){
 
 
 
+
+
+
+
 public function profile(){
     $user = auth()->user();
     return response()->json([
@@ -184,6 +205,9 @@ public function profile(){
         'user' => $user
     ], 200);
 }
+
+
+
 
 
 
