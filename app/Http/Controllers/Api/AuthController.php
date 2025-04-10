@@ -20,108 +20,84 @@ class AuthController extends Controller
 
     
     public function login(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        // 'email' => 'nullable|email|exists:users,email',
-        'phone_number' => 'nullable|numeric|unique:users,mobile_number',
-        // 'password' => 'required|min:4',
-    ]);
-
-    $user=User::where('mobile_number', $request->phone_number)->first();
-    if ($validator->fails()) {
+    {
+        $validator = Validator::make($request->all(), [
+            'phone_number' => 'nullable|numeric|unique:users,mobile_number',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 400);
+        }
+    
+        // Create user
+        $user = new User();
+        $user->name = $request->has('name') ? $request->name : 'Admin';
+        $user->mobile_number = $request->phone_number;
+        $user->role_id = 2;
+        $user->save();
+    
+        // Create Tenant
+        $tenant = new Tenant();
+        $tenant->user_id = $user->id;
+        $tenant->phone_number = $request->phone_number;
+        $tenant->save();
+    
+        // Create Tenant Unit
+        $tenantUnit = new TenantUnit();
+        $tenantUnit->business_name = 'Business Name';
+        $tenantUnit->tenant_id = $tenant->id;
+        $tenantUnit->phone_number = $request->phone_number;
+        $tenantUnit->save();
+    
+        // Update user with tenant unit ID
+        $user->user_tenant_unit_id = $tenantUnit->id;
+        $user->save();
+    
+        // Create UserTenantUnit
+        UserTenantUnit::create([
+            'user_id' => $user->id,
+            'tenant_id' => $tenant->id,
+            'tenant_type' => Tenant::class,
+        ]);
+    
+        // Create Product Category
+        $productcategory = new Productcategory();
+        $productcategory->product_category = 'General';
+        $productcategory->tenant_id = $tenant->id;
+        $productcategory->save();
+    
+        // Create Party Group
+        $partygroup = new Partygroup();
+        $partygroup->group_name = 'General';
+        $partygroup->tenant_id = $tenant->id;
+        $partygroup->save();
+    
+        // Generate and store OTP
+        $otpCode = rand(100000, 999999);
+    
+        $existingOtp = Otp::where('user_id', $user->id)->first();
+        if ($existingOtp) {
+            $existingOtp->otp = $otpCode;
+            $existingOtp->save();
+        } else {
+            $otp = new Otp();
+            $otp->user_id = $user->id;
+            $otp->otp = $otpCode;
+            $otp->save();
+        }
+    
         return response()->json([
-            'message' => 'Validation failed',
-            'errors' => $validator->errors(),
-        ], 400);
+            'message' => 'User logged in successfully',
+            'otp' => $otpCode
+        ], 200);
     }
-    // $user = null;
-    // if ($request->has('email')) {
-    //     $user = User::where('email', $request->email)->first();
-    // } elseif ($request->has('phone_number')) {
-    //     $user = User::where('mobile_number', $request->phone_number)->first();
-    // }
-
-    //   if (!$user) {
-    //     return response()->json([
-    //         'message' => 'Invalid credentials',
-    //     ], 400);
-    // }
-    // if (!$user || !Hash::check($request->password, $user->password)) {
-    //     return response()->json([
-    //         'message' => 'Invalid credentials',
-    //     ], 400);
-    // }
-
-
-    $user = new User();
-    $user->name = $request->has('name') ? $request->name : 'Admin';
-    $user->email = $request->email;
-    $user->mobile_number = $request->mobile_number;
-    $user->password = Hash::make($request->password);
-    $user->role_id = 2;
-    $user->save();
-
-    // Create Tenant
-    $tenant = new Tenant();
-    $tenant->user_id = $user->id;
-    $tenant->phone_number = $request->mobile_number;
-    $tenant->save();
-
-    // Update User with Tenant ID
-
-
-    $tenantUnit = new TenantUnit();
-    $tenantUnit->business_name = 'Business Name';
-    $tenantUnit->tenant_id = $tenant->id;
-    $tenantUnit->phone_number = $request->mobile_number;
-    $tenantUnit->save();
-
-    $user->user_tenant_unit_id = $tenantUnit->id;
-    $user->save();
-
-    // Insert into UserTenantUnit table
-    UserTenantUnit::create([
-        'user_id' => $user->id,
-        'tenant_id' => $tenant->id,
-        'tenant_type' => Tenant::class, // Storing the model class
-    ]);
-
-    // Create Product Category
-    $productcategory = new Productcategory();
-    $productcategory->product_category = 'General';
-    $productcategory->tenant_id = $tenant->id;
-    $productcategory->save();
-
-    // Create Party Group
-    $partygroup = new Partygroup();
-    $partygroup->group_name = 'General';
-    $partygroup->tenant_id = $tenant->id;
-    $partygroup->save();
-
-    // $token = $user->createToken('auth_token')->plainTextToken;
-
-    $otp = rand(100000, 999999);
     
-    $searchotptable = Otp::where('user_id', $user->id)->first();
-    
-    if ($searchotptable) {
-        $searchotptable->otp = $otp;
-        $searchotptable->save();
-    } else {
-        $otp = new Otp();
-        $otp->user_id = $user->id;
-        $otp->otp = $otp;
-        $otp->save();
-    }
-
-    return response()->json([
-        'message' => 'User logged in successfully',
-        'otp' => $user->otp
-    ], 200);
-}
 
 
-public function verifyOtp(Request $request){
+public function otpVerification(Request $request){
     dd("Working");
 }
 
