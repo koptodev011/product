@@ -17,7 +17,7 @@ Route::post('/signup', [AuthController::class, 'signup'])->name('signup');
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::post('/addstaff',[AuthController::class,'addStaff']);
-    Route::get('/otpverification',[AuthController::class,'otpVerification']);
+    Route::post('/otpverification',[AuthController::class,'otpVerification']);
 });
 // Tenant apis
 Route::middleware('auth:sanctum')->group(function () {

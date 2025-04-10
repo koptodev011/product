@@ -21,7 +21,7 @@ class TenantController extends Controller
 
 
 
-    // public function getAllBranchDetails()
+    // public function getAllBrachDetails()
     // {
     //     $user = auth()->user();
         // $tenants = User::with('tenants','tenants.businesstype','tenants.businesscategory','tenants.state')->where('id', $user->id)->get();
